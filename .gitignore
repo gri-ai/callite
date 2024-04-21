@@ -1,0 +1,10 @@
+/.idea/
+/venv/
+/api/uploads/
+**/.DS_Store
+**/*.pyc
+**/__pycache__
+
+/dist/
+
+/.pypirc

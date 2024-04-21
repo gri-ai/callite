@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  redis:
+    image: "redis:alpine"
+    environment:
+      - REDIS_PASSWORD=hotpass
+#    networks:
+#      - app-network
+    ports:
+      - "6379:6379"
+  server:
+    build:
+      context: .
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    command: python -m main
+#    networks:
+#      - app-network
+  client:
+    build:
+      context: .
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    command: python -m healthcheck
+    depends_on:
+      - server
+#    networks:
+#      - app-network
+#networks:
+#  app-network:
+#    driver: bridge
