@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="callite",
-    version="0.1.7",
+    version="0.1.8-alpha",
     packages=find_packages(),
 
     # Metadata
