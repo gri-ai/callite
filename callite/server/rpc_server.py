@@ -62,6 +62,9 @@ class RPCServer(RedisConnection):
                 self._handle_messages(message_data, message_id)
 
     def _handle_messages(self, message_data, message_id):
+        threading.Thread(target=self._process_single, args=(message_data, message_id), daemon=True).start()
+
+    def _process_single(self, message_data, message_id):
         response = self._call_registered_method(message_data['method'], message_id, message_data['params'])
         request_id =  message_data['request_id']
         self._logger.info(f"Response to message {message_id} is {response}")
