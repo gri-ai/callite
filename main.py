@@ -3,9 +3,9 @@ from callite.server import RPCServer
 
 class Main:
     def __init__(self):
-        self.service = "service"
-        self.redis_url = "redis://redis:6379/0"
-        self.rpc_service = RPCServer(self.redis_url, self.service)
+        service = "service"
+        redis_url = "redis://redis:6379/0"
+        self.rpc_service = RPCServer(redis_url, service)
 
     def run(self):
 

@@ -23,9 +23,9 @@ from callite.server import RPCService
 
 class Main:
     def __init__(self):
-        self.service = "service"
-        self.redis_url = "redis://redis:6379/0"
-        self.rpc_service = RPCService(self.redis_url, self.service)
+        service = "service"
+        redis_url = "redis://redis:6379/0"
+        self.rpc_service = RPCService(redis_url, service)
 
     def run(self):
         @self.rpc_service.register
@@ -57,15 +57,14 @@ from callite.client.rpc_client import RPCClient
 
 class Healthcheck():
     def __init__(self):
-        self.status = "OK"
         self.r = RPCClient("redis://redis:6379/0", "service")
 
     def get_status(self):
         start = time.perf_counter()
-        self.status = self.r.execute('healthcheck')
+        status = self.r.execute('healthcheck')
         end = time.perf_counter()
         print(f"Healthcheck took {end - start:0.4f} seconds")
-        return self.status
+        return status
 
     def check(self):
         return self.get_status()
@@ -78,8 +77,6 @@ if __name__ == "__main__":
 You can pass arguments and keyword arguments to the `execute` method as follows:
 
 ```python
-self.status = self.r.execute('healthcheck', [True], {'a': 1, 'b': 2})
+response = self.r.execute('foo', [True], {'paramX': 1, 'paramY': 2})
 ```
-
 This setup allows for efficient communication between components of a distributed system, promoting modularity and scalability.
-```
