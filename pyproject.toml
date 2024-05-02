@@ -1,10 +1,12 @@
 [tool.poetry]
 name = "callite"
-version = "0.1.8"
+version = "0.1.9"
 description = "Slim Redis RPC implementation"
 authors = ["Emrah Gozcu <gozcu@gri.ai>"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/gri-ai/callite"
+homepage = "https://www.gri.ai"
 
 [tool.poetry.dependencies]
 python = "^3.10"
