@@ -4,9 +4,11 @@ from callite.rpctypes.message_base import MessageBase
 
 
 class Response(MessageBase):
-    def __init__(self, method: str, message_id = None):
+    def __init__(self, method: str, message_id = None, status = None, error = None, data = None):
         super(Response, self).__init__(method, message_id)
-        self.data = None
+        self.data = data
+        self.status = status
+        self.error = error
 
 
     def response_json(self):

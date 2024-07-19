@@ -79,14 +79,15 @@ class RPCServer(RedisConnection):
             self._logger.warn(f"Method {method} not registered")
             return
         try:
-            data = self._registered_methods[method](*params['args'], **params['kwargs'])
-
             # TODO: Check why message_id is bytes
             message_id = message_id.decode('utf-8') if isinstance(message_id, bytes) else message_id
+            args, kwargs = params['args'], params['kwargs']
+            data = self._registered_methods[method](*args, **kwargs)
+
             response = Response(self._service, message_id)
             response.data = data
             return response.__dict__
         except Exception as e:
             self._logger.error(e)
-            # TODO: log and return exception
-            return
+            response = Response(self._service, message_id, status='error', error=str(e))
+            return response.__dict__

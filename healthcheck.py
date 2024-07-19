@@ -22,6 +22,18 @@ class Healthcheck():
     def check(self):
         return self.get_status()
 
+    def check_add(self, a, b):
+        return self.r.execute('add', a, b)
+
+    def check_subtract(self, a, b):
+        return self.r.execute('subtract', a = a, b = b)
+
 
 if __name__ == "__main__":
-    Healthcheck().check()
+    hc = Healthcheck()
+    res = hc.check()
+    hc.logger.info(f'Healthcheck status: {res}')
+    res = hc.check_add(1, 2)
+    hc.logger.info(f'Added 1 and 2 = {res}')
+    res = hc.check_subtract(2, 1)
+    hc.logger.info(f'Subtracted 1 from 2 = {res}')
