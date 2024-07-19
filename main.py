@@ -13,6 +13,14 @@ class Main:
         def healthcheck():
             return "OK"
 
+        @self.rpc_service.register
+        def add(a, b):
+            return a + b
+
+        @self.rpc_service.register
+        def subtract(a, b):
+            return a - b
+
         self.rpc_service.run_forever()
 
 if __name__ == "__main__":

@@ -46,6 +46,31 @@ class RPCClient(RedisConnection):
 
 
     def execute(self, method: str, *args, **kwargs) -> dict:
+        """
+        Executes a method on the service by sending a request through Redis.
+
+        Args:
+            method (str): The name of the method to execute.
+            *args: Arguments to pass to the method.
+            **kwargs: Keyword arguments to pass to the method.
+
+        Returns:
+            dict: The response data from the service.
+
+        Raises:
+            Exception: If the request times out.
+        Usage:
+            1- With args
+            >>> client = RPCClient('redis://localhost:6379', 'my_service')
+            >>> result = client.execute('add_numbers', 1, 2)
+            >>> print(result)
+            {'type': 'message', 'pattern': None, 'channel': b'/callite/response/dbeda6f4e2684c3cb661bbc2ab80c432', 'data': b'{"data": {"message_id": "1721425282477-0", "method": "service", "data": 3, "status": null, "error": null}, "request_id": "f891f31f4b0948a28942afb79cc996d8"}'}
+            2. With kwargs
+            >>> client = RPCClient('redis://localhost:6379', 'my_service')
+            >>> result = client.execute('add_numbers', num1=1, num2=2)
+            >>> print(result)
+            {'type': 'message', 'pattern': None, 'channel': b'/callite/response/dbeda6f4e2684c3cb661bbc2ab80c432', 'data': b'{"data": {"message_id": "1721425282477-0", "method": "service", "data": 3, "status": null, "error": null}, "request_id": "f891f31f4b0948a28942afb79cc996d8"}'}
+        """
         request = Request(method, self._connection_id, None, *args, **kwargs)
         request_uuid = request.request_id
 

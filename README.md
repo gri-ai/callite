@@ -32,6 +32,12 @@ class Main:
         def healthcheck():
             return "OK"
 
+        @self.rpc_service.register
+        def foo(paramX, paramY):
+            // Do something with paramX and paramY
+            return "OK"
+
+        
         self.rpc_service.run_forever()
 
 
@@ -60,10 +66,11 @@ class Healthcheck():
         self.r = RPCClient("redis://redis:6379/0", "service")
 
     def get_status(self):
-        start = time.perf_counter()
         status = self.r.execute('healthcheck')
-        end = time.perf_counter()
-        print(f"Healthcheck took {end - start:0.4f} seconds")
+        return status
+
+    def foo(self. paramX, paramY):
+        status = self.r.execute('foo', paramX = paramX, paramY = paramY)
         return status
 
     def check(self):
@@ -77,6 +84,8 @@ if __name__ == "__main__":
 You can pass arguments and keyword arguments to the `execute` method as follows:
 
 ```python
-response = self.r.execute('foo', [True], {'paramX': 1, 'paramY': 2})
+response = self.r.execute('foo', {'paramX': 1, 'paramY': 2})
+# or
+response = self.r.execute('foo', 1, 2)
 ```
 This setup allows for efficient communication between components of a distributed system, promoting modularity and scalability.
