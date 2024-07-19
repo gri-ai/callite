@@ -84,7 +84,7 @@ if __name__ == "__main__":
 You can pass arguments and keyword arguments to the `execute` method as follows:
 
 ```python
-response = self.r.execute('foo', {'paramX': 1, 'paramY': 2})
+response = self.r.execute('foo', paramX = 1, paramY = 2)
 # or
 response = self.r.execute('foo', 1, 2)
 ```
