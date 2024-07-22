@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import logging
 
@@ -9,6 +10,9 @@ from callite.rpctypes.request import Request
 # import pydevd_pycharm
 # pydevd_pycharm.settrace('host.docker.internal', port=4444, stdoutToServer=True, stderrToServer=True)
 
+log_level = os.getenv('LOG_LEVEL', 'ERROR')
+log_level = getattr(logging, log_level.upper(), 'ERROR')
+
 
 class RPCClient(RedisConnection):
 
@@ -18,7 +22,7 @@ class RPCClient(RedisConnection):
         self._subscribe()
         self._logger = logging.getLogger(__name__)
         self._logger.addHandler(logging.StreamHandler())
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(log_level)
 
     def _subscribe(self):
         self.channel = self._rds.pubsub()
