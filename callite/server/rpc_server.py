@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import threading
 import time
 from types import FunctionType
@@ -13,6 +14,10 @@ from callite.shared.redis_connection import RedisConnection
 
 # import pydevd_pycharm
 # pydevd_pycharm.settrace('host.docker.internal', port=4444, stdoutToServer=True, stderrToServer=True)
+
+log_level = os.getenv('LOG_LEVEL', 'ERROR')
+log_level = getattr(logging, log_level.upper(), 'ERROR')
+
 # TODO: Check method calls and parameters
 class RPCServer(RedisConnection):
     def __init__(self, conn_url: str, service: str, *args, **kwargs):
@@ -24,7 +29,7 @@ class RPCServer(RedisConnection):
         t.start()
         self._logger = logging.getLogger(__name__)
         self._logger.addHandler(logging.StreamHandler())
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(log_level)
 
 
     def register(self, handler: FunctionType | Callable, method_name: str | None = None) -> Callable:
