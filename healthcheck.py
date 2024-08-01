@@ -1,3 +1,5 @@
+import asyncio
+import threading
 import time
 import logging
 
@@ -31,9 +33,11 @@ class Healthcheck():
 
 if __name__ == "__main__":
     hc = Healthcheck()
-    res = hc.check()
-    hc.logger.info(f'Healthcheck status: {res}')
-    res = hc.check_add(1, 2)
-    hc.logger.info(f'Added 1 and 2 = {res}')
-    res = hc.check_subtract(2, 1)
-    hc.logger.info(f'Subtracted 1 from 2 = {res}')
+    threads = []
+    for i in range(100):
+        thread = threading.Thread(target=hc.r.execute, args=('add', i, 0))
+        threads.append(thread)
+        thread.start()
+    print('Start')
+    for thread in threads:
+        thread.join()

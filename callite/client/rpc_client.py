@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import threading
@@ -26,6 +27,7 @@ class RPCClient(RedisConnection):
     def __init__(self, conn_url: str, service: str, *args, **kwargs) -> None:
         super().__init__(conn_url, service, *args, **kwargs)
         self._request_pool = {}
+        self._subscribe_thread = None
         self._subscribe()
         self._logger = logging.getLogger(__name__)
         self._logger.addHandler(logging.StreamHandler())
@@ -34,11 +36,11 @@ class RPCClient(RedisConnection):
     def _subscribe(self):
         self.channel = self._rds.pubsub()
         self.channel.subscribe(f'{self._queue_prefix}/response/{self._connection_id}')
-        thread = threading.Thread(target=self._pull_from_redis, daemon=True)
-        thread.start()
+        self._subscribe_thread = threading.Thread(target=self._pull_from_redis, daemon=True)
+        self._subscribe_thread.start()
 
     def _pull_from_redis(self):
-        def _on_delivery(message):
+        async def _on_delivery(message):
             self._logger.info(f"Received message {message}")
             data = json.loads(message['data'].decode('utf-8'))
             request_guid = data['request_id']
@@ -53,7 +55,8 @@ class RPCClient(RedisConnection):
             message: dict | None = self.channel.get_message(ignore_subscribe_messages=True, timeout=100)
             if not message: continue
             if not message['data']: continue
-            _on_delivery(message)
+            asyncio.run(_on_delivery(message))
+
 
     def execute(self, method: str, *args, **kwargs) -> dict:
         """
@@ -74,12 +77,10 @@ class RPCClient(RedisConnection):
             >>> client = RPCClient('redis://localhost:6379', 'my_service')
             >>> result = client.execute('add_numbers', 1, 2)
             >>> print(result)
-            {'type': 'message', 'pattern': None, 'channel': b'/callite/response/dbeda6f4e2684c3cb661bbc2ab80c432', 'data': b'{"data": {"message_id": "1721425282477-0", "method": "service", "data": 3, "status": null, "error": null}, "request_id": "f891f31f4b0948a28942afb79cc996d8"}'}
             2. With kwargs
             >>> client = RPCClient('redis://localhost:6379', 'my_service')
             >>> result = client.execute('add_numbers', num1=1, num2=2)
             >>> print(result)
-            {'type': 'message', 'pattern': None, 'channel': b'/callite/response/dbeda6f4e2684c3cb661bbc2ab80c432', 'data': b'{"data": {"message_id": "1721425282477-0", "method": "service", "data": 3, "status": null, "error": null}, "request_id": "f891f31f4b0948a28942afb79cc996d8"}'}
         """
         request = Request(method, self._connection_id, None, *args, **kwargs)
         request_uuid = request.request_id
@@ -90,7 +91,7 @@ class RPCClient(RedisConnection):
 
         self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': json.dumps(request.payload_json())})
         self._logger.info(f"Sent message {request_uuid} to {self._queue_prefix}/request/{self._service}")
-        # TODO: parameterize timeout
+
         lock_success = request_lock.acquire(timeout=TIMEOUT)
         lock, response = self._request_pool.pop(request_uuid)
         if lock_success:
@@ -98,3 +99,9 @@ class RPCClient(RedisConnection):
             return check_and_return(response['data'])
 
         raise Exception('Timeout')
+
+    def close(self) -> None:
+        self._running = False
+        if self._subscribe_thread:
+            self._subscribe_thread.join()
+        super().close()

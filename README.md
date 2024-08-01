@@ -84,8 +84,12 @@ if __name__ == "__main__":
 You can pass arguments and keyword arguments to the `execute` method as follows:
 
 ```python
-response = self.r.execute('foo', paramX = 1, paramY = 2)
+client = RPCClient('redis://localhost:6379', 'my_service')
+...
+...
+...
+response = client.execute('foo', paramX = 1, paramY = 2)
 # or
-response = self.r.execute('foo', 1, 2)
+response = client.execute('foo', 1, 2)
 ```
 This setup allows for efficient communication between components of a distributed system, promoting modularity and scalability.
