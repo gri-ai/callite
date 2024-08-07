@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import pickle
 import threading
 import logging
 
@@ -42,7 +43,8 @@ class RPCClient(RedisConnection):
     def _pull_from_redis(self):
         async def _on_delivery(message):
             self._logger.info(f"Received message {message}")
-            data = json.loads(message['data'].decode('utf-8'))
+            # data = json.loads(message['data'].decode('utf-8'))
+            data = pickle.loads(message['data'])
             request_guid = data['request_id']
             if request_guid not in self._request_pool:
                 return
@@ -89,7 +91,7 @@ class RPCClient(RedisConnection):
         self._request_pool[request_uuid] = (request_lock, None)
         request_lock.acquire()
 
-        self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': json.dumps(request.payload_json())})
+        self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': request.payload_json()})
         self._logger.info(f"Sent message {request_uuid} to {self._queue_prefix}/request/{self._service}")
 
         lock_success = request_lock.acquire(timeout=TIMEOUT)

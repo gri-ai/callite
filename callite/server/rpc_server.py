@@ -1,4 +1,5 @@
 import json
+import pickle
 import logging
 import os
 import threading
@@ -73,7 +74,7 @@ class RPCServer(RedisConnection):
         response = self._call_registered_method(message_data['method'], message_id, message_data['params'])
         request_id =  message_data['request_id']
         self._logger.info(f"Response to message {message_id} is {response}")
-        payload = json.dumps({'data': response, 'request_id': request_id})
+        payload = pickle.dumps({'data': response, 'request_id': request_id})
         self._rds.publish(f'{self._queue_prefix}/response/{message_data["client_id"]}', payload)
         self._rds.xack(f'{self._queue_prefix}/request/{self._service}', self._xread_groupname, message_id)
         self._logger.info(f"Processed message {message_id} and response published to {self._queue_prefix}/response/{message_data['request_id']}")

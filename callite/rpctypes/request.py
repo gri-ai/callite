@@ -14,12 +14,17 @@ class Request(MessageBase):
     def set_data(self, data):
         self.data = data
     def payload_json(self):
-        return {
-            'request_id': self.request_id,
-            'client_id': self.client_id,
-            'method': self.method,
-            'params': {'args': self.args, 'kwargs': self.kwargs}
-        }
+        payload = (
+            '{'
+            '"request_id": "' + self.request_id + '", '
+            '"client_id": "' + self.client_id + '", '
+            '"method": "' + self.method + '", '
+            '"params": {'
+            '"args": ' + str(list(self.args)) + ', '
+            '"kwargs": ' + str(self.kwargs) +
+            '}}'
+        )
+        return payload
 
     def __str__(self):
         return "Request: request_id: %s, method: %s" % (self.request_id, self.method)
