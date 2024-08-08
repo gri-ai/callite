@@ -63,37 +63,35 @@ class RPCServer(RedisConnection):
         for _, message_list in messages:
             for _message in message_list:
                 message_id, message_data = _message
-                message_data = json.loads(message_data[b'data'])
-                self._logger.info(f"Processing message {message_id} with data: {message_data}")
-                self._handle_messages(message_data, message_id)
+                request = pickle.loads(message_data[b'data'])
+                self._logger.info(f"Processing message {message_id} with data: {request}")
+                self._handle_messages(request, message_id)
 
-    def _handle_messages(self, message_data, message_id):
-        threading.Thread(target=self._process_single, args=(message_data, message_id), daemon=True).start()
+    def _handle_messages(self, request, message_id):
+        threading.Thread(target=self._process_single, args=(request, message_id), daemon=True).start()
 
-    def _process_single(self, message_data, message_id):
-        response = self._call_registered_method(message_data['method'], message_id, message_data['params'])
-        request_id =  message_data['request_id']
+    def _process_single(self, request, message_id):
+        response = self._call_registered_method(request.method, message_id, *request.args, **request.kwargs)
         self._logger.info(f"Response to message {message_id} is {response}")
-        payload = pickle.dumps({'data': response, 'request_id': request_id})
-        self._rds.publish(f'{self._queue_prefix}/response/{message_data["client_id"]}', payload)
+        payload = pickle.dumps({'data': response, 'request_id': request.request_id})
+        self._rds.publish(f'{self._queue_prefix}/response/{request.client_id}', payload)
         self._rds.xack(f'{self._queue_prefix}/request/{self._service}', self._xread_groupname, message_id)
-        self._logger.info(f"Processed message {message_id} and response published to {self._queue_prefix}/response/{message_data['request_id']}")
+        self._logger.info(f"Processed message {message_id} and response published to {self._queue_prefix}/response/{request.request_id}")
 
 
-    def _call_registered_method(self, method: str, message_id, params: dict) -> Any:
+    def _call_registered_method(self, method: str, message_id, *args, **kwargs) -> Any:
         if method not in self._registered_methods:
             self._logger.warn(f"Method {method} not registered")
             return
         try:
             # TODO: Check why message_id is bytes
             message_id = message_id.decode('utf-8') if isinstance(message_id, bytes) else message_id
-            args, kwargs = params['args'], params['kwargs']
             data = self._registered_methods[method](*args, **kwargs)
 
             response = Response(self._service, message_id)
             response.data = data
-            return response.__dict__
+            return response
         except Exception as e:
             self._logger.error(e)
             response = Response(self._service, message_id, status='error', error=str(e))
-            return response.__dict__
+            return response

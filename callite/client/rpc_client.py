@@ -11,16 +11,17 @@ from callite.rpctypes.request import Request
 
 # import pydevd_pycharm
 # pydevd_pycharm.settrace('host.docker.internal', port=4444, stdoutToServer=True, stderrToServer=True)
+# pydevd_pycharm.settrace('localhost', port=4444, stdoutToServer=True, stderrToServer=True)
 
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'ERROR')
 LOG_LEVEL = getattr(logging, LOG_LEVEL.upper(), 'ERROR')
 TIMEOUT = os.getenv('EXECUTION_TIMEOUT', 30)
 
 def check_and_return(response):
-    if response['status'] == 'error':
-        raise Exception(response['error'])
+    if response.status == 'error':
+        raise Exception(response.error)
 
-    return response['data']
+    return response.data
 
 
 class RPCClient(RedisConnection):
@@ -90,15 +91,16 @@ class RPCClient(RedisConnection):
         request_lock = threading.Lock()
         self._request_pool[request_uuid] = (request_lock, None)
         request_lock.acquire()
-
-        self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': request.payload_json()})
+        pickled_request = pickle.dumps(request)
+        self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': pickled_request})
         self._logger.info(f"Sent message {request_uuid} to {self._queue_prefix}/request/{self._service}")
 
         lock_success = request_lock.acquire(timeout=TIMEOUT)
-        lock, response = self._request_pool.pop(request_uuid)
+        lock, data = self._request_pool.pop(request_uuid)
         if lock_success:
-            self._logger.info(f"Received response to message {request_uuid} {type(response['data'])}")
-            return check_and_return(response['data'])
+            response = data['data']
+            self._logger.info(f"Received response to message {request_uuid} {type(response)}")
+            return check_and_return(response)
 
         raise Exception('Timeout')
 
@@ -107,3 +109,7 @@ class RPCClient(RedisConnection):
         if self._subscribe_thread:
             self._subscribe_thread.join()
         super().close()
+
+if __name__ == "__main__":
+    client = RPCClient("redis://localhost:6379/0", "db")
+    client.execute('get_question',2)

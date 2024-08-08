@@ -15,7 +15,7 @@ To implement the Callite server, follow these steps:
 3. Register your functions with the RPC service using the `register` decorator.
 4. Run the RPC service indefinitely.
 
-Here's an example implementation:
+Here's an example server implementation:
 
 ```python
 from callite.server import RPCService
@@ -25,7 +25,7 @@ class Main:
     def __init__(self):
         service = "service"
         redis_url = "redis://redis:6379/0"
-        self.rpc_service = RPCService(redis_url, service)
+        self.rpc_service = RPCService(redis_url, 'my_service')
 
     def run(self):
         @self.rpc_service.register
@@ -63,33 +63,25 @@ from callite.client.rpc_client import RPCClient
 
 class Healthcheck():
     def __init__(self):
-        self.r = RPCClient("redis://redis:6379/0", "service")
+        self.r = RPCClient("redis://redis:6379/0", "my_service")
 
     def get_status(self):
         status = self.r.execute('healthcheck')
         return status
 
     def foo(self. paramX, paramY):
-        status = self.r.execute('foo', paramX = paramX, paramY = paramY)
+        response = self.r.execute('foo', paramX = paramX, paramY = paramY)
         return status
 
-    def check(self):
-        return self.get_status()
 
-
-if __name__ == "__main__":
-    Healthcheck().check()
 ```
 
-You can pass arguments and keyword arguments to the `execute` method as follows:
+You can also pass arguments and keyword arguments to the `execute` method as follows:
 
 ```python
 client = RPCClient('redis://localhost:6379', 'my_service')
 ...
 ...
-...
-response = client.execute('foo', paramX = 1, paramY = 2)
-# or
 response = client.execute('foo', 1, 2)
 ```
 This setup allows for efficient communication between components of a distributed system, promoting modularity and scalability.
