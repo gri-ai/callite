@@ -21,14 +21,14 @@ class Healthcheck():
         return status
 
     def add(self, a, b):
-        self.r.publish('log', f"Adding {a} and {b}")
+        self.r.publish('log', f"Logging {a} + {b}")
         result = self.r.execute('add', a, b)
         return result
 
 if __name__ == "__main__":
     hc = Healthcheck()
     threads = []
-    for i in range(100):
+    for i in range(200):
         thread = threading.Thread(target=hc.add, args=(i, 0))
         threads.append(thread)
         thread.start()

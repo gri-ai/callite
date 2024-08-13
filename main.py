@@ -1,7 +1,9 @@
-from concurrent.futures import thread
-
+import logging
 from callite.server import RPCServer
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
 
 class Main:
     def __init__(self):
@@ -17,15 +19,17 @@ class Main:
 
         @self.rpc_service.register
         def add(a, b):
+            logger.log(logging.INFO, f"Adding {a} and {b}")
             return a + b
 
         @self.rpc_service.register
         def subtract(a, b):
+            logger.log(logging.INFO, f"Subtracting {a} and {b}")
             return a - b
 
         @self.rpc_service.subscribe
         def log(message):
-            print(message)
+            logger.log(logging.INFO, message)
 
         self.rpc_service.run_forever()
 
