@@ -23,6 +23,10 @@ class Main:
         def subtract(a, b):
             return a - b
 
+        @self.rpc_service.subscribe
+        def log(message):
+            print(message)
+
         self.rpc_service.run_forever()
 
 if __name__ == "__main__":

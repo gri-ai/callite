@@ -60,6 +60,20 @@ class RPCClient(RedisConnection):
             if not message['data']: continue
             asyncio.run(_on_delivery(message))
 
+    def publish(self, method: str, *args, **kwargs):
+
+        async def _publish():
+            request = Request(method, self._connection_id, None, *args, **kwargs)
+            pickled_request = pickle.dumps(request)
+            self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': pickled_request})
+            self._logger.info(f"Published message {request.request_id} to {self._queue_prefix}/request/{self._service}")
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(_publish())
+        except RuntimeError:
+            # No event loop is running, create a new one
+            asyncio.run(_publish())
 
     def execute(self, method: str, *args, **kwargs) -> dict:
         """

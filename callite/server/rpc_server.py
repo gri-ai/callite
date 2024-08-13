@@ -32,10 +32,14 @@ class RPCServer(RedisConnection):
         self._logger.addHandler(logging.StreamHandler())
         self._logger.setLevel(log_level)
 
+    def subscribe(self, handler: FunctionType | Callable, method_name: str | None = None) -> None:
+        method_name = method_name or handler.__name__
+        self._registered_methods[method_name] = {'func': handler, 'returns': False}
+        return handler
 
     def register(self, handler: FunctionType | Callable, method_name: str | None = None) -> Callable:
         method_name = method_name or handler.__name__
-        self._registered_methods[method_name] = handler
+        self._registered_methods[method_name] = {'func': handler, 'returns': True}
         return handler
 
     def run_forever(self) -> None:
@@ -86,7 +90,12 @@ class RPCServer(RedisConnection):
         try:
             # TODO: Check why message_id is bytes
             message_id = message_id.decode('utf-8') if isinstance(message_id, bytes) else message_id
-            data = self._registered_methods[method](*args, **kwargs)
+
+            if not self._registered_methods[method]['returns']:
+                self._registered_methods[method]['func'](*args, **kwargs)
+                return
+
+            data = self._registered_methods[method]['func'](*args, **kwargs)
 
             response = Response(self._service, message_id)
             response.data = data
