@@ -75,25 +75,36 @@ class RPCServer(RedisConnection):
         threading.Thread(target=self._process_single, args=(request, message_id), daemon=True).start()
 
     def _process_single(self, request, message_id):
-        response = self._call_registered_method(request.method, message_id, *request.args, **request.kwargs)
-        self._logger.info(f"Response to message {message_id} is {response}")
-        payload = pickle.dumps({'data': response, 'request_id': request.request_id})
-        self._rds.publish(f'{self._queue_prefix}/response/{request.client_id}', payload)
+        returns = self._registered_methods[request.method]['returns']
+        if returns:
+            response = self._call_registered_method(request.method, message_id, *request.args, **request.kwargs)
+            self._logger.info(f"Response to message {message_id} is {response}")
+            payload = pickle.dumps({'data': response, 'request_id': request.request_id})
+            self._rds.publish(f'{self._queue_prefix}/response/{request.client_id}', payload)
+        else:
+            self._call_registered_method_no_returns(request.method, message_id, *request.args, **request.kwargs)
+
         self._rds.xack(f'{self._queue_prefix}/request/{self._service}', self._xread_groupname, message_id)
         self._logger.info(f"Processed message {message_id} and response published to {self._queue_prefix}/response/{request.request_id}")
 
+    def _call_registered_method_no_returns(self, method: str, message_id, *args, **kwargs) -> None:
+        if method not in self._registered_methods:
+            self._logger.warning(f"Method {method} not registered")
+            raise Exception(f"Method {method} not registered")
+        try:
+            self._registered_methods[method]['func'](*args, **kwargs)
+            return
+
+        except Exception as e:
+            self._logger.error(e)
+            return
 
     def _call_registered_method(self, method: str, message_id, *args, **kwargs) -> Any:
         if method not in self._registered_methods:
-            self._logger.warn(f"Method {method} not registered")
-            return
+            self._logger.warning(f"Method {method} not registered")
+            raise Exception(f"Method {method} not registered")
         try:
-            # TODO: Check why message_id is bytes
             message_id = message_id.decode('utf-8') if isinstance(message_id, bytes) else message_id
-
-            if not self._registered_methods[method]['returns']:
-                self._registered_methods[method]['func'](*args, **kwargs)
-                return
 
             data = self._registered_methods[method]['func'](*args, **kwargs)
 
