@@ -1,4 +1,3 @@
-import logging
 import uuid
 import redis
 from abc import ABC
@@ -14,9 +13,7 @@ class RedisConnection(ABC):
         self._connection_id = uuid.uuid4().hex
         self._queue_prefix = kwargs.get('queue_prefix', '/callite')
         self._rds = redis.Redis.from_url(conn_url)
-        self._rds.ping()
-        self._logger = logging.getLogger(f'RPC{service}')
-        self._logger.setLevel(logging.INFO)
+        # self._rds.ping()
 
     def close(self) -> None:
         self._running = False

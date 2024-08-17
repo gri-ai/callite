@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "callite"
-version = "0.2.7"
+version = "0.2.8"
 description = "Slim Redis RPC implementation"
 authors = ["Emrah Gozcu <gozcu@gri.ai>"]
 license = "MIT"

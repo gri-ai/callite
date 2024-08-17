@@ -1,9 +1,7 @@
 import asyncio
-import json
 import os
 import pickle
 import threading
-import logging
 
 from callite.shared.redis_connection import RedisConnection
 from callite.rpctypes.request import Request
@@ -13,8 +11,6 @@ from callite.rpctypes.request import Request
 # pydevd_pycharm.settrace('host.docker.internal', port=4444, stdoutToServer=True, stderrToServer=True)
 # pydevd_pycharm.settrace('localhost', port=4444, stdoutToServer=True, stderrToServer=True)
 
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'ERROR')
-LOG_LEVEL = getattr(logging, LOG_LEVEL.upper(), 'ERROR')
 TIMEOUT = os.getenv('EXECUTION_TIMEOUT', 30)
 
 def check_and_return(response):
@@ -31,9 +27,6 @@ class RPCClient(RedisConnection):
         self._request_pool = {}
         self._subscribe_thread = None
         self._subscribe()
-        self._logger = logging.getLogger(__name__)
-        self._logger.addHandler(logging.StreamHandler())
-        self._logger.setLevel(LOG_LEVEL)
 
     def _subscribe(self):
         self.channel = self._rds.pubsub()
@@ -43,7 +36,6 @@ class RPCClient(RedisConnection):
 
     def _pull_from_redis(self):
         async def _on_delivery(message):
-            self._logger.info(f"Received message {message}")
             # data = json.loads(message['data'].decode('utf-8'))
             data = pickle.loads(message['data'])
             request_guid = data['request_id']
@@ -66,7 +58,6 @@ class RPCClient(RedisConnection):
             request = Request(method, self._connection_id, None, *args, **kwargs)
             pickled_request = pickle.dumps(request)
             self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': pickled_request})
-            self._logger.info(f"Published message {request.request_id} to {self._queue_prefix}/request/{self._service}")
 
         try:
             loop = asyncio.get_running_loop()
@@ -107,13 +98,11 @@ class RPCClient(RedisConnection):
         request_lock.acquire()
         pickled_request = pickle.dumps(request)
         self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': pickled_request})
-        self._logger.info(f"Sent message {request_uuid} to {self._queue_prefix}/request/{self._service}")
 
         lock_success = request_lock.acquire(timeout=TIMEOUT)
         lock, data = self._request_pool.pop(request_uuid)
         if lock_success:
             response = data['data']
-            self._logger.info(f"Received response to message {request_uuid} {type(response)}")
             return check_and_return(response)
 
         raise Exception('Timeout')
