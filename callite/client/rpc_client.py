@@ -22,11 +22,12 @@ def check_and_return(response):
 
 class RPCClient(RedisConnection):
 
-    def __init__(self, conn_url: str, service: str, *args, **kwargs) -> None:
+    def __init__(self, conn_url: str, service: str, execution_timeout=TIMEOUT, *args, **kwargs) -> None:
         super().__init__(conn_url, service, *args, **kwargs)
         self._request_pool = {}
         self._subscribe_thread = None
         self._subscribe()
+        self.execution_timeout = execution_timeout
 
     def _subscribe(self):
         self.channel = self._rds.pubsub()
@@ -99,7 +100,7 @@ class RPCClient(RedisConnection):
         pickled_request = pickle.dumps(request)
         self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': pickled_request})
 
-        lock_success = request_lock.acquire(timeout=TIMEOUT)
+        lock_success = request_lock.acquire(timeout=self.execution_timeout)
         lock, data = self._request_pool.pop(request_uuid)
         if lock_success:
             response = data['data']
