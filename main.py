@@ -1,8 +1,17 @@
 import logging
+import os
+
 from callite.server import RPCServer
 
+# import pydevd_pycharm
+# pydevd_pycharm.settrace('host.docker.internal', port=4444, stdoutToServer=True, stderrToServer=True)
+# pydevd_pycharm.settrace('localhost', port=4444, stdoutToServer=True, stderrToServer=True)
+
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+log_level = getattr(logging, log_level.upper(), 'INFO')
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(log_level)
 logger.addHandler(logging.StreamHandler())
 
 class Main:

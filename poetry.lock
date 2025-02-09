@@ -1,29 +1,30 @@
 [[package]]
 name = "async-timeout"
-version = "4.0.3"
+version = "5.0.1"
 description = "Timeout context manager for asyncio programs"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 
 [[package]]
 name = "mypy"
-version = "1.11.1"
+version = "1.15.0"
 description = "Optional static typing for Python"
 category = "dev"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 
 [package.dependencies]
-mypy-extensions = ">=1.0.0"
+mypy_extensions = ">=1.0.0"
 tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
-typing-extensions = ">=4.6.0"
+typing_extensions = ">=4.6.0"
 
 [package.extras]
 dmypy = ["psutil (>=4.0)"]
-install-types = ["pip"]
 mypyc = ["setuptools (>=50)"]
 reports = ["lxml"]
+install-types = ["pip"]
+faster-cache = ["orjson"]
 
 [[package]]
 name = "mypy-extensions"
@@ -43,26 +44,38 @@ python-versions = "*"
 
 [[package]]
 name = "redis"
-version = "5.0.8"
+version = "5.2.1"
 description = "Python client for Redis database and key-value store"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 
 [package.dependencies]
 async-timeout = {version = ">=4.0.3", markers = "python_full_version < \"3.11.3\""}
 
 [package.extras]
-hiredis = ["hiredis (>1.0.0)"]
-ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
+hiredis = ["hiredis (>=3.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"]
+
+[[package]]
+name = "tenacity"
+version = "9.0.0"
+description = "Retry code until it succeeds"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.extras]
+doc = ["reno", "sphinx"]
+test = ["pytest", "tornado (>=4.5)", "typeguard"]
 
 [[package]]
 name = "tomli"
-version = "2.0.1"
+version = "2.2.1"
 description = "A lil' TOML parser"
 category = "dev"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 
 [[package]]
 name = "typing-extensions"
@@ -75,7 +88,7 @@ python-versions = ">=3.8"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "dc4bd97b6da2fa16e15aeec86ac5b5407a6926f226e3faf37aa32d2d6692979a"
+content-hash = "844b26c0c778d4dfb2b2ac81b9ee58ee2d4f3a1e6d241a5a15af25bd53019b7f"
 
 [metadata.files]
 async-timeout = []
@@ -83,5 +96,6 @@ mypy = []
 mypy-extensions = []
 pydevd-pycharm = []
 redis = []
+tenacity = []
 tomli = []
 typing-extensions = []

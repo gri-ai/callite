@@ -1,4 +1,3 @@
-import json
 import pickle
 import logging
 import os
@@ -8,13 +7,14 @@ from types import FunctionType
 from typing import Any, Callable
 
 import redis
+from tenacity import *
 
 from callite.rpctypes.response import Response
 from callite.shared.redis_connection import RedisConnection
 
 
 # import pydevd_pycharm
-# pydevd_pycharm.settrace('host.docker.internal', port=4444, stdoutToServer=True, stderrToServer=True)
+# pydevd_pycharm.settrace('localhost', port=4444, stdoutToServer=True, stderrToServer=True)
 
 log_level = os.getenv('LOG_LEVEL', 'ERROR')
 log_level = getattr(logging, log_level.upper(), 'ERROR')
@@ -25,32 +25,70 @@ class RPCServer(RedisConnection):
         super().__init__(conn_url, service, *args, **kwargs)
         self._registered_methods = {}
         self._xread_groupname = kwargs.get('xread_groupname', 'generic')
+        # self._encoded_xread_groupname = self._xread_groupname.encode('utf-8')
 
-        t = threading.Thread(target=self._subscribe_redis, daemon=True)
-        t.start()
         self._logger = logging.getLogger(__name__)
         self._logger.addHandler(logging.StreamHandler())
         self._logger.setLevel(log_level)
+        # TODO: handle thread exceptions and dispose of threads
+
+        self._subscribe_redis_thread = threading.Thread(target=self._subscribe_redis, daemon=True)
+        self._subscribe_redis_thread.start()
+        self._logger.debug("Server started")
 
     def subscribe(self, handler: FunctionType | Callable, method_name: str | None = None) -> None:
-        method_name = method_name or handler.__name__
-        self._registered_methods[method_name] = {'func': handler, 'returns': False}
-        return handler
+        self.register_method(handler, method_name, False)
 
     def register(self, handler: FunctionType | Callable, method_name: str | None = None) -> Callable:
+        return self.register_method(handler, method_name, True)
+
+    def register_method(self, handler: FunctionType | Callable, method_name: str | None = None, returns: bool = True) -> Callable:
         method_name = method_name or handler.__name__
-        self._registered_methods[method_name] = {'func': handler, 'returns': True}
+        self._logger.debug(f"Registering method {method_name}")
+        self._registered_methods[method_name] = {'func': handler, 'returns': returns}
         return handler
 
     def run_forever(self) -> None:
         while self._running: time.sleep(1000000)
 
-
+    @retry
     def _subscribe_redis(self):
-        self._create_redis_group()
         while self._running:
+            if not self._check_connection():
+                self._connect()
+            if not self._check_xgroup_exists():
+                self._create_redis_group()
+            self._logger.debug("Checking for messages")
             messages = self._read_messages_from_redis()
+            self._logger.debug(f"Received {len(messages)} messages")
             self._process_messages(messages)
+
+            # try:
+            #     self._rds.ping()
+            #     self._logger.debug("Connection is alive!")
+            # except:
+            #     # Handle connection error if needed
+            #     self._rds = redis.Redis.from_url(self._conn_url)
+            #     self._logger.debug("Connection error!")
+
+    def _check_connection(self):
+        try:
+            self._rds.ping()
+            return True
+        except redis.exceptions.ConnectionError:
+            return False
+
+    def _check_xgroup_exists(self):
+        try:
+            info = self._rds.xinfo_groups(f'{self._queue_prefix}/request/{self._service}')
+        # if len(info) != 0 and info[0]['name'] != self._encoded_xread_groupname:
+            if len(info) != 0:
+                self._logger.debug('GROUP exists')
+                return True
+        except redis.exceptions.ResponseError:
+            return False
+
+        return False
 
     def _create_redis_group(self):
         try:
@@ -60,7 +98,8 @@ class RPCServer(RedisConnection):
 
     def _read_messages_from_redis(self):
         messages = self._rds.xreadgroup(self._xread_groupname, self._connection_id, {f'{self._queue_prefix}/request/{self._service}': '>'}, count=1, block=1000, noack=True)
-        self._logger.info(f"{len(messages)} messages received from {self._queue_prefix}/request/{self._service}")
+        self._logger.debug(f"{len(messages)} messages received from {self._queue_prefix}/request/{self._service}")
+
         return messages
 
     def _process_messages(self, messages):

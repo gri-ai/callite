@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import pickle
 import threading
@@ -13,6 +14,9 @@ from callite.rpctypes.request import Request
 
 TIMEOUT = os.getenv('EXECUTION_TIMEOUT', 30)
 
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+log_level = getattr(logging, log_level.upper(), 'INFO')
+
 def check_and_return(response):
     if response.status == 'error':
         raise Exception(response.error)
@@ -24,6 +28,9 @@ class RPCClient(RedisConnection):
 
     def __init__(self, conn_url: str, service: str, execution_timeout=TIMEOUT, *args, **kwargs) -> None:
         super().__init__(conn_url, service, *args, **kwargs)
+        self._logger = logging.getLogger(__name__)
+        self._logger.addHandler(logging.StreamHandler())
+        self._logger.setLevel(log_level)
         self._request_pool = {}
         self._subscribe_thread = None
         self._subscribe()
@@ -91,21 +98,27 @@ class RPCClient(RedisConnection):
             >>> result = client.execute('add_numbers', num1=1, num2=2)
             >>> print(result)
         """
+        self._logger.debug(f'Executing method: {method}')
         request = Request(method, self._connection_id, None, *args, **kwargs)
         request_uuid = request.request_id
 
         request_lock = threading.Lock()
         self._request_pool[request_uuid] = (request_lock, None)
+        self._logger.debug(f'Acquiring lock: {request_uuid}')
         request_lock.acquire()
         pickled_request = pickle.dumps(request)
+        self._logger.debug(f'Publishing request: {request_uuid}')
         self._rds.xadd(f'{self._queue_prefix}/request/{self._service}', {'data': pickled_request})
 
+        self._logger.debug(f'Waiting for response: {request_uuid}')
         lock_success = request_lock.acquire(timeout=self.execution_timeout)
+        self._logger.debug(f'Response result: {request_uuid}')
         lock, data = self._request_pool.pop(request_uuid)
         if lock_success:
+            self._logger.debug(f'Releasing lock: {request_uuid}')
             response = data['data']
             return check_and_return(response)
-
+        self._logger.debug(f'Lock timeout: {request_uuid}')
         raise Exception('Timeout')
 
     def close(self) -> None:
