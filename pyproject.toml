@@ -11,7 +11,7 @@ homepage = "https://www.gri.ai"
 [tool.poetry.dependencies]
 python = "^3.10"
 redis = "^5.0.3"
-tenacity = "^9.0.0"
+tenacity = "^8.5.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.9.0"

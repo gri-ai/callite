@@ -59,7 +59,7 @@ ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"
 
 [[package]]
 name = "tenacity"
-version = "9.0.0"
+version = "8.5.0"
 description = "Retry code until it succeeds"
 category = "main"
 optional = false
@@ -88,7 +88,7 @@ python-versions = ">=3.8"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "844b26c0c778d4dfb2b2ac81b9ee58ee2d4f3a1e6d241a5a15af25bd53019b7f"
+content-hash = "8b3d97830a547642a3415f4b9d2b7bbbdda1101910574b0b989a908b8b6c2f3b"
 
 [metadata.files]
 async-timeout = []
