@@ -70,7 +70,7 @@ Two call patterns:
 
 - **Naming**: snake_case for functions/variables, PascalCase for classes
 - **Private members**: prefixed with `_` (e.g., `_rds`, `_running`, `_request_pool`)
-- **Logging**: `logging` module with `LOG_LEVEL` env var (default varies: `ERROR` in server, `INFO` in client); each class creates its own logger via `logging.getLogger(__name__)`
+- **Logging**: `logging` module with `LOG_LEVEL` env var; defaults controlled via `_log_level_default` class attribute (`'ERROR'` in server, `'INFO'` in client). Logger setup is consolidated in `RedisConnection.__init__` using `logging.getLogger(type(self).__module__)`
 - **Type hints**: Used on method signatures (parameters and return types), not enforced strictly
 - **Imports**: Standard library first, then third-party, then local modules
 - **Threading**: Daemon threads for background work (`daemon=True`)

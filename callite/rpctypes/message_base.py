@@ -1,3 +1,3 @@
-class MessageBase(object):
+class MessageBase:
     def __init__(self, message_id):
         self.message_id: str = message_id

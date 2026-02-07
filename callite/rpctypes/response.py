@@ -1,5 +1,3 @@
-import json
-
 from callite.rpctypes.message_base import MessageBase
 
 
