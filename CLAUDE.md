@@ -42,8 +42,14 @@ poetry run python -m main
 # Run example client/stress test (requires server running)
 poetry run python -m healthcheck
 
-# Build package
+# Build package (compiled with Cython)
 python3 -m build
+
+# Compile C extensions in-place for local development
+python setup.py build_ext --inplace
+
+# Build pure Python package (skip Cython compilation)
+USE_CYTHON=0 python3 -m build
 
 # Local development with Docker
 docker-compose up
@@ -52,7 +58,8 @@ docker-compose up
 ## Dependencies
 
 **Runtime**: `redis` (^5.0.3), `tenacity` (^8.5.0)
-**Dev**: `mypy` (^1.9.0), `setuptools` (^69.1.1), `pydevd-pycharm`
+**Dev**: `mypy` (^1.9.0), `setuptools` (^69.1.1), `pydevd-pycharm`, `Cython` (^3.0.0)
+**Build**: `setuptools`, `wheel`, `Cython` (for compiled builds)
 
 ## Architecture & Communication Flow
 
@@ -99,6 +106,16 @@ Version is maintained in two places that must stay in sync:
 - `setup.py` (`version` parameter)
 
 Current version: `0.2.11`
+
+## Cython Compilation
+
+The project supports Cython compilation to produce C extensions for faster execution. The build system uses setuptools with Cython as a build dependency.
+
+- **Compiled modules**: `rpc_client.py`, `rpc_server.py`, `redis_connection.py`, `message_base.py`, `request.py`, `response.py`, `rpc_exception.py`
+- **Excluded from compilation**: All `__init__.py` files (kept as pure Python for import compatibility)
+- **Fallback**: If Cython is not installed, the build falls back to a pure Python package
+- **Opt-out**: Set `USE_CYTHON=0` environment variable to skip compilation
+- **Build backend**: `setuptools.build_meta` (switched from `poetry-core` to support C extensions)
 
 ## Key Design Decisions
 
